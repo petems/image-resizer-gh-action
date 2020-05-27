@@ -5,11 +5,11 @@ branding:
   icon: 'image'  
   color: 'green'
 inputs:
-  image-folder:
+  target:
     description: 'Folder in which images are stored'
     required: true
     default: 'images'
-  new-resolution:
+  dimensions:
     description: 'New resolution for images'
     required: true
     default: '500x'
@@ -28,8 +28,8 @@ jobs:
       run: sudo apt-get install imagemagick
     - name: Get into the input folder
       run: |
-        cd ${{ inputs.image-folder }}
+        cd $INPUT_TARGET
     - name: apply conversion
       run: |
-        mogrify -path . -auto-orient -thumbnail ${{ inputs.new-resolution }} *.*
+        mogrify -path . -auto-orient -thumbnail $INPUT_DIMENSIONS *.*
         
