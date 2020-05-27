@@ -17,17 +17,9 @@ outputs:
   time:
     description: 'The time we greeted you'
     
-jobs:   
-  resizing:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Install pre-requisites
-      run: sudo apt-get install build-essential 
-    - name: Install Imagemagick
-      run: sudo apt-get install imagemagick
-    - name: Get into the input folder
-      run: |
-        cd $INPUT_TARGET
-    - name: apply conversion
-      run: |
-        mogrify -path . -auto-orient -thumbnail $INPUT_DIMENSIONS *.*
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.target }}
+    - ${{ inputs.dimensions }}
