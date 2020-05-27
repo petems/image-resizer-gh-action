@@ -19,7 +19,6 @@ outputs:
     
 jobs:   
   resizing:
-    name: Resize Operations
     runs-on: ubuntu-latest
     steps:
     - name: Install pre-requisites
@@ -32,4 +31,3 @@ jobs:
     - name: apply conversion
       run: |
         mogrify -path . -auto-orient -thumbnail $INPUT_DIMENSIONS *.*
-        
