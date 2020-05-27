@@ -11,3 +11,9 @@ A GitHub action to resize your images within the folder they are.
     # New resolution for images
     dimensions: # default is 500x
 ```
+
+### Sample usage
+
+Check out a sample of how to use this action here - 
+
+[here](https://github.com/dsc-x/dsc-x.github.io/blob/dev/.github/workflows/main.yml)
