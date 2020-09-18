@@ -1,0 +1,35 @@
+name: Resize images
+
+on: 
+  pull_request:
+    paths:
+      - '**.jpg'
+      - '**.jpeg'
+      - '**.png'
+      - '**.webp'
+
+jobs:
+  build:
+    name: Image Resizer Inplace Limit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+
+      - name: Compress Images
+        uses: petems/img-resizer-inplace@master
+        with:
+          target: # default is images
+          # New resolution for images
+          dimensions: # default is 70%
+          widthLimit: 1024 
+          heightLimit: 768
+
+      - name: Add & Commit files
+        run: |
+          git checkout $GITHUB_HEAD_REF
+          git config --local user.email "github-action[bot]@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add .
+          git commit -m "Resizing imges with img-resizer-inplace-limit" -a
+          git push -u origin $GITHUB_HEAD_REF -f
