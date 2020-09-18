@@ -1,6 +1,6 @@
 # action.yml
-name: 'Image Resizer Inplace'
-description: 'In place resize images inside a folder'
+name: 'Image Resizer Inplace with Limits'
+description: 'In place resize images inside a folder when over a certain size limit'
 branding:
   icon: 'image'  
   color: 'green'
@@ -12,7 +12,13 @@ inputs:
   dimensions:
     description: 'New resolution for images'
     required: true
-    default: '500x'
+    default: '70%'
+  widthLimit:
+    description: 'Width Limit'
+    required: true
+  HeightLimit:
+    description: 'Height Limit'
+    required: true
 outputs:
   time:
     description: 'The time we greeted you'
@@ -21,5 +27,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
+    - ${{ inputs.widthLimit }}
+    - ${{ inputs.HeightLimit }}
     - ${{ inputs.target }}
     - ${{ inputs.dimensions }}
+    
