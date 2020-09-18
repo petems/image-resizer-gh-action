@@ -6,7 +6,7 @@ echo "Width Limit: $1"
 echo "Height Limit: $2"
 echo "Given directory: $3"
 
-imagecount=$(find -E $3 -regex '.*\.(jpg|png|jpeg|gif)' | wc -l)
+imagecount=$(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)' | wc -l)
 
 echo "Image count in directory: $imagecount"
 
