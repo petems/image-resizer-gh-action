@@ -1,7 +1,6 @@
 #!/bin/bash
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]
-then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
   echo "Please provide all variables"
   exit 1;
 fi
@@ -43,7 +42,7 @@ for f in ${imagearray[@]}; do
     echo "mogrify complete, new size: $newimageWidth x $newimageHeight"
     roughOutput="${roughOutput}<br />${f} - old size: $imageWidth x $imageHeight, new size: $newimageWidth x $newimageHeight"
     changedCount=$((changedCount+1))
-  else 
+  else
     echo "Image $f is not Oversized, no mogrify needed"
   fi
 done
