@@ -8,9 +8,10 @@ before_install:
 matrix:
   fast_finish: true
   include:
-  - rvm: '2.1'
+  - rvm: '2.3'
     sudo: required
     services: docker
     script:
       - bashate -i E003,E006 entrypoint.sh
+      - shellcheck entrypoint.sh
       - bundle exec rspec spec/

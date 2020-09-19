@@ -14,16 +14,16 @@ echo "Width Limit: $1"
 echo "Height Limit: $2"
 echo "Given directory: $3"
 
-imagecount=$(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)' | wc -l)
+imagecount=$(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)' | wc -l)
 
 echo "Image count in directory: $imagecount"
 
 if [ "$imagecount" -eq "0" ]; then
-   echo "No images found in $3";
+   echo "No images found in $imagesdir";
    exit 1;
 fi
 
-imagearray=($(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)'))
+mapfile -t imagearray < <(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)')
 
 roughOutput=""
 changedCount=0
@@ -35,8 +35,8 @@ for f in "${imagearray[@]}"; do
 
   if [ "$imageWidth" -gt "$limitWidth" ] || [ "$imageHeight" -gt "$limitHeight" ]; then
     echo "Image $f is Oversized: $imageWidth x $imageHeight"
-    echo "mogrifying comand will be: mogrify -resize $4 $f"
-    mogrify -resize $4 $f
+    echo "mogrifying comand will be: mogrify -resize $resizeparam $f"
+    mogrify -resize "$resizeparam" "$f"
     newimageWidth=$(identify -format "%w" "$f")
     newimageHeight=$(identify -format "%h" "$f")
     echo "mogrify complete, new size: $newimageWidth x $newimageHeight"
