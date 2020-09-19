@@ -13,4 +13,5 @@ matrix:
     services: docker
     script:
       - bashate -i E003,E006 entrypoint.sh
+      - shellcheck entrypoint.sh
       - bundle exec rspec spec/
