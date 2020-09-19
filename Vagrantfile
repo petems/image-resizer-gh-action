@@ -9,7 +9,8 @@ Vagrant.configure("2") do |config|
   config.vm.box = "alpine/alpine64"
 
   config.vm.provision "shell", inline: <<-SHELL
-    apk add --no-cache file
-    apk --update add imagemagick findutils
+    sudo apk add --no-cache file
+    sudo apk add --no-cache musl\>1.1.20 --repository http://dl-cdn.alpinelinux.org/alpine/edge/main
+    sudo apk --update add imagemagick findutils
   SHELL
 end
