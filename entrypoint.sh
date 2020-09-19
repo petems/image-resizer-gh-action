@@ -1,6 +1,15 @@
-#!/bin/sh -l
+#!/bin/sh
+
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]
+then
+  echo "Please provide all variables"
+  exit 1;
+fi
+
 limitWidth=$1
 limitHeight=$2
+imagesdir=$3
+resizeparam=$4
 
 echo "Width Limit: $1"
 echo "Height Limit: $2"
@@ -15,7 +24,7 @@ if [ "$imagecount" -eq "0" ]; then
    exit 1;
 fi
 
-imagearray=($(find -E $3 -regex '.*\.(jpg|png|jpeg|gif)'))
+imagearray=($(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)'))
 
 roughOutput=""
 
