@@ -46,4 +46,4 @@ for f in ${imagearray[@]}; do
   fi
 done
 
-echo -e "::set-output name=images_changed::${roughOutput}"
+echo "::set-output name=images_changed::${roughOutput}"
