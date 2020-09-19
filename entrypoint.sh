@@ -17,6 +17,8 @@ fi
 
 imagearray=($(find -E $3 -regex '.*\.(jpg|png|jpeg|gif)'))
 
+roughOutput=""
+
 for f in ${imagearray[@]}; do
   echo "Image Name: $f"
   imageWidth=$(identify -format "%w" "$f")
@@ -29,8 +31,10 @@ for f in ${imagearray[@]}; do
     newimageWidth=$(identify -format "%w" "$f")
     newimageHeight=$(identify -format "%h" "$f")
     echo "mogrify complete, new size: $newimageWidth x $newimageHeight"
-    images_changed="$images_changed" + " $f"
+    roughOutput="${roughOutput}\n${f} - new size: $newimageWidth x $newimageHeight"
   else 
     echo "Image $f is not Oversized, no mogrify needed"
   fi
 done
+
+echo "::set-output name=images_changed::${roughOutput}"
