@@ -1,6 +1,6 @@
 # img-resizer-inplace-limit
 
-A GitHub action to resize your images within the folder they are if they are over a certain size limit
+A GitHub action to resize your images within a given folder they are if they are over a certain size limit
 
 ```yml
 - name: Resize images above 1024 width
@@ -8,12 +8,27 @@ A GitHub action to resize your images within the folder they are if they are ove
   uses: petems/img-resizer-inplace@master
   with:
     target: images/ # directory to look for images in
-    dimensions: 70% # parameter to change size 
+    dimensions: 70% # parameter to change size, passed to mogrify as ``
     widthLimit: 1024 # max width to check
     heightLimit: 768 # max height to check
 ```
 
-This action uses `mogrify` at its core. To understand more about the tool and how to define dimensions read this [guide on mogrify](https://imagemagick.org/script/mogrify.php)
+This action uses `mogrify` at its core for resizing. 
+
+To understand more about the tool and how to define dimensions read this [guide on mogrify](https://imagemagick.org/script/mogrify.php)
+
+### Resize paremeter
+
+The `dimensions` parameter is passed to the command line for the [resize cli option for mogrify](https://imagemagick.org/script/command-line-options.php#resize).
+
+Some examples:
+
+> -resize '200%' bigWiz.png
+> -resize '200x50%' longShortWiz.png
+> -resize '100x200' notThinWiz.png
+> -resize '100x200^' biggerNotThinWiz.png
+> -resize '100x200!' dochThinWiz.png
+
 
 ### Sample usage
 
@@ -126,3 +141,7 @@ Dockerfile
 Finished in 0.79154 seconds (files took 0.40993 seconds to load)
 6 examples, 0 failures
 ```
+
+#### Inspiration
+
+This was inspired by https://github.com/calibreapp/image-actions and existing actions like https://github.com/sharadcodes/img-resizer.
