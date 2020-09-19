@@ -27,6 +27,7 @@ fi
 imagearray=($(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)'))
 
 roughOutput=""
+changedCount=0
 
 for f in ${imagearray[@]}; do
   echo "Image Name: $f"
@@ -40,10 +41,15 @@ for f in ${imagearray[@]}; do
     newimageWidth=$(identify -format "%w" "$f")
     newimageHeight=$(identify -format "%h" "$f")
     echo "mogrify complete, new size: $newimageWidth x $newimageHeight"
-    roughOutput="${roughOutput}\n${f} - old size: $imageWidth x $imageHeight, new size: $newimageWidth x $newimageHeight"
+    roughOutput="${roughOutput}<br />${f} - old size: $imageWidth x $imageHeight, new size: $newimageWidth x $newimageHeight"
+    changedCount=$((changedCount+1))
   else 
     echo "Image $f is not Oversized, no mogrify needed"
   fi
 done
 
-echo "::set-output name=images_changed::${roughOutput}"
+if [ "$changedCount" -gt 0 ]
+  echo "::set-output name=images_changed::${roughOutput}"
+else
+  echo "::set-output name=images_changed::'No Images Changed'"
+fi
