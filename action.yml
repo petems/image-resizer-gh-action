@@ -20,8 +20,8 @@ inputs:
     description: 'Height Limit'
     required: true
 outputs:
-  time:
-    description: 'The time we greeted you'
+  images_changed:
+    description: 'A string listing all images resized'
     
 runs:
   using: 'docker'
