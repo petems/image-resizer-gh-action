@@ -48,7 +48,7 @@ for f in ${imagearray[@]}; do
   fi
 done
 
-if [ "$changedCount" -gt 0 ]
+if [ "$changedCount" -gt 0 ]; then
   echo "::set-output name=images_changed::${roughOutput}"
 else
   echo "::set-output name=images_changed::'No Images Changed'"
