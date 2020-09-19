@@ -4,6 +4,7 @@ before_install:
   - gem install bundler
   - bundle install
   - docker pull alpine:latest
+  - pip install bashate
 matrix:
   fast_finish: true
   include:
