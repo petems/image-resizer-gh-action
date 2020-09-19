@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
   echo "Please provide all variables"
@@ -28,7 +28,7 @@ imagearray=($(find $3 -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)')
 roughOutput=""
 changedCount=0
 
-for f in ${imagearray[@]}; do
+for f in "${imagearray[@]}"; do
   echo "Image Name: $f"
   imageWidth=$(identify -format "%w" "$f")
   imageHeight=$(identify -format "%h" "$f")

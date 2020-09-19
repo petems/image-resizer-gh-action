@@ -3,26 +3,85 @@
 A GitHub action to resize your images within the folder they are if they are over a certain size limit
 
 ```yml
-- name: Image Resizer Inplace Limit
-  uses: petems/img-resizer-inplace@v1
+- name: Resize images above 1024 width
+  id: resize-images
+  uses: petems/img-resizer-inplace@master
   with:
-    # Folder in which images are stored
-    target: # default is images
-    # New resolution for images
-    dimensions: # default is 70%
-    widthLimit: 1024 
-    heightLimit: 768
+    target: images/ # directory to look for images in
+    dimensions: 70% # parameter to change size 
+    widthLimit: 1024 # max width to check
+    heightLimit: 768 # max height to check
 ```
 
 This action uses `mogrify` at its core. To understand more about the tool and how to define dimensions read this [guide on mogrify](https://imagemagick.org/script/mogrify.php)
 
 ### Sample usage
 
-Check out a sample of how to use this action - 
+Since Github actions can be built together, you could put several steps together to do the following:
 
-### Testing
+* Resize images on pull-request above 1024 width and 768 height
+* Reduce them by 90%
+* Commit them to the PR 
+* Comment on the PR with the resizing changes:
 
-#### Script
+```yaml
+name: Resize images
+
+on:
+  pull_request:
+    paths:
+      - 'images/**.jpg'
+      - 'images/**.jpeg'
+      - 'images/**.png'
+
+jobs:
+  build:
+    name: Image Resizer Inplace Limit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+
+      - name: Compress Images
+        id: resize-images
+        uses: petems/img-resizer-inplace@master
+        with:
+          target: images/ # directory to look for images in
+          dimensions: 90% # parameter to change size
+          widthLimit: 1024 # max width to check
+          heightLimit: 768 # max height to check
+      - name: Commit changes
+      uses: EndBug/add-and-commit@v4
+      with:
+        add: 'images/'
+        author_name: "github-actions[bot]"
+        author_email: "github-actions@users.noreply.github.com"
+        message: |
+          Images Reszied by Github action\n
+          ```
+          ${{steps.resize-images.outputs.images_changed}}
+          ```
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: mshick/add-pr-comment@v1
+        with:
+          message: |
+            **Hello, I resized images for you!**:
+            ${{steps.resize-images.outputs.images_changed}}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub tokens
+          allow-repeats: true
+```
+
+You should then see something like this:
+
+![PR Comment](https://user-images.githubusercontent.com/1064715/93666213-34f76400-fa74-11ea-8baa-5ca35636e923.png)
+
+My testing repo is here: https://github.com/petems/action-test-repo
+
+### Testing and Development
+
+#### VM Testing
 
 Run vagrant then run the script:
 
@@ -39,4 +98,31 @@ Image ./images/cat-over-1024.jpg is Oversized: 1310 x 983
 mogrifying comand will be: mogrify -resize 50% ./images/cat-over-1024.jpg
 mogrify complete, new size: 655 x 492
 ::set-output name=images_changed::\n./images/cat-over-1024.jpg - new size: 655 x 492
+```
+
+#### Spec Testing with Docker
+
+```
+$ bundle exec rspec spec/
+
+Dockerfile
+  entrypoint.sh with valid file
+    Command "mkdir -p images/ && convert -size 32x32 xc:black ./images/black-box-32.jpg"
+      exit_status
+        is expected to eq 0
+    File "./images/black-box-32.jpg"
+      is expected to exist
+      size
+        is expected to eql 165
+    Command "bash -x ./entrypoint.sh 31 31 ./images/ 50%"
+      stdout
+        is expected to match "::set-output name=images_changed::<br />./images/black-box-32.jpg - old size: 32 x 32, new size: 16 x 16"
+      exit_status
+        is expected to eq 0
+    File "./images/black-box-32.jpg"
+      size
+        is expected to eql 162
+
+Finished in 0.79154 seconds (files took 0.40993 seconds to load)
+6 examples, 0 failures
 ```
