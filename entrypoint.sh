@@ -14,7 +14,7 @@ echo "Width Limit: $1"
 echo "Height Limit: $2"
 echo "Given directory: $3"
 
-imagecount=$(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)' | wc -l)
+imagecount=$(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)' | wc -l)
 
 echo "Image count in directory: $imagecount"
 
@@ -23,7 +23,7 @@ if [ "$imagecount" -eq "0" ]; then
    exit 1;
 fi
 
-mapfile -t imagearray < <(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg|gif)')
+mapfile -t imagearray < <(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)')
 
 roughOutput=""
 changedCount=0
