@@ -16,6 +16,13 @@ echo "Given directory: $3"
 
 imagecount=$(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)' | wc -l)
 
+if [ -d "$imagesdir" ]; then
+  true
+else
+  echo "Error: ${imagesdir} does not exist"
+  exit 1
+fi
+
 echo "Image count in directory: $imagecount"
 
 if [ "$imagecount" -eq "0" ]; then

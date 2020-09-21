@@ -28,9 +28,12 @@ describe "Dockerfile" do
       its(:stdout) { should match '::set-output name=images_changed::<br />./images/black-box-32.jpg - old size: 32 x 32, new size: 16 x 16' }
       its(:exit_status) { should eq 0 }
     end
+  end
 
-    describe file('./images/black-box-32.jpg') do
-      its(:size) { should eql 162 }
+  context 'entrypoint.sh with non-existance directory' do
+    describe command('bash -x ./entrypoint.sh 31 31 ./notexist/ 50%') do
+      its(:stdout) { should match 'Error: ./notexist/ does not exist' }
+      its(:exit_status) { should eq 1 }
     end
   end
 end
