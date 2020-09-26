@@ -33,6 +33,7 @@ fi
 mapfile -t imagearray < <(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)')
 
 roughOutput=""
+csvOutput="Image path, Old size, New size"
 changedCount=0
 
 for f in "${imagearray[@]}"; do
@@ -48,6 +49,7 @@ for f in "${imagearray[@]}"; do
     newimageHeight=$(identify -format "%h" "$f")
     echo "mogrify complete, new size: $newimageWidth x $newimageHeight"
     roughOutput="${roughOutput}<br />${f} - old size: $imageWidth x $imageHeight, new size: $newimageWidth x $newimageHeight"
+    csvOutput="${csvOutput}\n${f}, $imageWidth x $imageHeight, $newimageWidth x $newimageHeight"
     changedCount=$((changedCount+1))
   else
     echo "Image $f is not Oversized, no mogrify needed"
@@ -59,3 +61,5 @@ if [ "$changedCount" -gt 0 ]; then
 else
   echo "::set-output name=images_changed::'No Images Changed'"
 fi
+
+echo -e "::set-output name=csv_images_changed::${csvOutput}"

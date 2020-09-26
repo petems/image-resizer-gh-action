@@ -22,6 +22,8 @@ inputs:
 outputs:
   images_changed:
     description: 'A string listing all images resized'
+  csv_images_changed:
+    description: 'A csv listing all images resized'
     
 runs:
   using: 'docker'

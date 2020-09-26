@@ -23,11 +23,11 @@ The `dimensions` parameter is passed to the command line for the [resize cli opt
 
 Some examples:
 
-> -resize '200%' bigWiz.png
-> -resize '200x50%' longShortWiz.png
-> -resize '100x200' notThinWiz.png
-> -resize '100x200^' biggerNotThinWiz.png
-> -resize '100x200!' dochThinWiz.png
+> * -resize '200%' bigWiz.png
+> * -resize '200x50%' longShortWiz.png
+> * -resize '100x200' notThinWiz.png
+> * -resize '100x200^' biggerNotThinWiz.png
+> * -resize '100x200!' dochThinWiz.png
 
 
 ### Sample usage
@@ -35,7 +35,7 @@ Some examples:
 Since Github actions can be built together, you could put several steps together to do the following:
 
 * Resize images on pull-request above 1024 width and 768 height
-* Reduce them by 90%
+* Reduce them to 90%
 * Commit them to the PR 
 * Comment on the PR with the resizing changes:
 
@@ -66,23 +66,28 @@ jobs:
           widthLimit: 1024 # max width to check
           heightLimit: 768 # max height to check
       - name: Commit changes
-      uses: EndBug/add-and-commit@v4
-      with:
-        add: 'images/'
-        author_name: "github-actions[bot]"
-        author_email: "github-actions@users.noreply.github.com"
-        message: |
-          Images Reszied by Github action\n
+        uses: EndBug/add-and-commit@v4
+        with:
+          add: 'images/'
+          author_name: "github-actions[bot]"
+          author_email: "github-actions@users.noreply.github.com"
+          message: |
+            Images Reszied by Github action\n
+            ```
+            ${{steps.resize-images.outputs.images_changed}}
           ```
-          ${{steps.resize-images.outputs.images_changed}}
-          ```
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Convert to Markdown Table
+        uses: petems/csv-to-md-table-action@master
+        id: csv-table-output
+        with:
+          csvinput: ${{ steps.resize-images.outputs.csv_images_changed }}
       - uses: mshick/add-pr-comment@v1
         with:
           message: |
             **Hello, I resized images for you!**:
-            ${{steps.resize-images.outputs.images_changed}}
+            ${{steps.csv-table-output.outputs.markdown-table}}
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub tokens
           allow-repeats: true
