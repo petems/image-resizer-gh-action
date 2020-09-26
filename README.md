@@ -78,11 +78,65 @@ jobs:
           ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: mshick/add-pr-comment@v1
+        with:
+          message: |
+            **Hello, I resized images for you!**:
+            ${{steps.csv-table-output.outputs.images_changed}}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: 'github-actions[bot]' # The user.login for temporary GitHub tokens
+          allow-repeats: true
+```
+
+You should then see something like this:
+
+![PR Comment](https://user-images.githubusercontent.com/1064715/93666213-34f76400-fa74-11ea-8baa-5ca35636e923.png)
+
+I also made a Github action to convert CSV into markdown, so you can take the CSV output and post it to the pull-request as a Markdown table:
+
+```yaml
+name: Resize images
+
+on:
+  pull_request:
+    paths:
+      - 'images/**.jpg'
+      - 'images/**.jpeg'
+      - 'images/**.png'
+
+jobs:
+  build:
+    name: Image Resizer Inplace Limit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+      - name: Compress Images
+        id: resize-images
+        uses: petems/image-resizer-gh-action@master
+        with:
+          target: images/ # directory to look for images in
+          dimensions: 90% # parameter to change size
+          widthLimit: 1024 # max width to check
+          heightLimit: 768 # max height to check
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          add: 'images/'
+          author_name: "github-actions[bot]"
+          author_email: "github-actions@users.noreply.github.com"
+          message: |
+            Images Reszied by Github action\n
+            ```
+            ${{steps.resize-images.outputs.images_changed}}
+            ```
       - name: Convert to Markdown Table
         uses: petems/csv-to-md-table-action@master
         id: csv-table-output
         with:
-          csvinput: ${{ steps.resize-images.outputs.csv_images_changed }}
+          csvinput: ${{steps.resize-images.outputs.csv_images_changed}}
       - uses: mshick/add-pr-comment@v1
         with:
           message: |
@@ -93,9 +147,11 @@ jobs:
           allow-repeats: true
 ```
 
-You should then see something like this:
+Which creates a markdown table in the pull-request like so:
 
-![PR Comment](https://user-images.githubusercontent.com/1064715/93666213-34f76400-fa74-11ea-8baa-5ca35636e923.png)
+![Table PR Comment](https://user-images.githubusercontent.com/1064715/94340746-ec9fef00-fffb-11ea-82a5-5de5372563f2.png)
+
+My testing repo is here: https://github.com/petems/action-test-repo
 
 My testing repo is here: https://github.com/petems/action-test-repo
 

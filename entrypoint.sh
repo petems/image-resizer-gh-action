@@ -62,4 +62,10 @@ else
   echo "::set-output name=images_changed::'No Images Changed'"
 fi
 
-echo -e "::set-output name=csv_images_changed::${csvOutput}"
+# Workaround until https://github.community/t/set-output-truncates-multiline-strings/16852/7#M8539 is resolved
+csvOutput=$(echo -e "$csvOutput)")
+csvOutput="${csvOutput//'%'/'%25'}"
+csvOutput="${csvOutput//$'\n'/'%0A'}"
+csvOutput="${csvOutput//$'\r'/'%0D'}"
+
+echo "::set-output name=csv_images_changed::${csvOutput}"

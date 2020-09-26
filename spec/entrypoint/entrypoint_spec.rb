@@ -26,7 +26,7 @@ describe "Dockerfile" do
 
     describe command('bash -x ./entrypoint.sh 31 31 ./images/ 50%') do
       its(:stdout) { should match '::set-output name=images_changed::<br />./images/black-box-32.jpg - old size: 32 x 32, new size: 16 x 16' }
-      its(:stdout) { should match '::set-output name=csv_images_changed::Image path, Old size, New size\n./images/black-box-32.jpg, 32 x 32, 16 x 16' }
+      its(:stdout) { should match '::set-output name=csv_images_changed::Image path, Old size, New size%0A./images/black-box-32.jpg, 32 x 32, 16 x 16' }
       its(:exit_status) { should eq 0 }
     end
   end
