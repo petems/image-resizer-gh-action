@@ -75,7 +75,7 @@ jobs:
             Images Reszied by Github action\n
             ```
             ${{steps.resize-images.outputs.images_changed}}
-          ```
+            ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: mshick/add-pr-comment@v1
