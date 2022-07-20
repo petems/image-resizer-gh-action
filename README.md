@@ -5,7 +5,7 @@ A GitHub action to resize your images within a given folder they are if they are
 ```yml
 - name: Resize images above 1024 width
   id: resize-images
-  uses: petems/img-resizer-inplace@master
+  uses: petems/image-resizer-gh-action@master
   with:
     target: images/ # directory to look for images in
     dimensions: 70% # parameter to change size, passed to mogrify as ``
@@ -59,7 +59,7 @@ jobs:
 
       - name: Compress Images
         id: resize-images
-        uses: petems/img-resizer-inplace@master
+        uses: petems/image-resizer-gh-action@master
         with:
           target: images/ # directory to look for images in
           dimensions: 90% # parameter to change size
