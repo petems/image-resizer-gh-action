@@ -48,7 +48,7 @@ for f in "${imagearray[@]}"; do
 
   if [ "$imageWidth" -gt "$limitWidth" ] || [ "$imageHeight" -gt "$limitHeight" ]; then
     echo "Image $f is Oversized: $imageWidth x $imageHeight"
-    echo "mogrifying comand will be: mogrify -resize $resizeparam $f"
+    echo "mogrifying command will be: mogrify -resize $resizeparam $f"
     mogrify -resize "$resizeparam" "$f"
     newimageWidth=$(identify -format "%w" "$f")
     newimageHeight=$(identify -format "%h" "$f")

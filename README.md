@@ -17,7 +17,7 @@ This action uses `mogrify` at its core for resizing.
 
 To understand more about the tool and how to define dimensions read this [guide on mogrify](https://imagemagick.org/script/mogrify.php)
 
-### Resize paremeter
+### Resize parameter
 
 The `dimensions` parameter is passed to the command line for the [resize cli option for mogrify](https://imagemagick.org/script/command-line-options.php#resize).
 
@@ -32,7 +32,7 @@ Some examples:
 
 ### Sample usage
 
-Since Github actions can be built together, you could put several steps together to do the following:
+Since GitHub Actions can be built together, you could put several steps together to do the following:
 
 * Resize images on pull-request above 1024 width and 768 height
 * Reduce them to 90%
@@ -72,7 +72,7 @@ jobs:
           author_name: "github-actions[bot]"
           author_email: "github-actions@users.noreply.github.com"
           message: |
-            Images Reszied by Github action\n
+            Images Resized by GitHub Actions\n
             ```
             ${{steps.resize-images.outputs.images_changed}}
             ```
@@ -92,7 +92,7 @@ You should then see something like this:
 
 ![PR Comment](https://user-images.githubusercontent.com/1064715/93666213-34f76400-fa74-11ea-8baa-5ca35636e923.png)
 
-I also made a Github action to convert CSV into markdown, so you can take the CSV output and post it to the pull-request as a Markdown table:
+I also made a GitHub Action to convert CSV into markdown, so you can take the CSV output and post it to the pull-request as a Markdown table:
 
 ```yaml
 name: Resize images
@@ -128,7 +128,7 @@ jobs:
           author_name: "github-actions[bot]"
           author_email: "github-actions@users.noreply.github.com"
           message: |
-            Images Reszied by Github action\n
+            Images Resized by GitHub Actions\n
             ```
             ${{steps.resize-images.outputs.images_changed}}
             ```
