@@ -1,0 +1,7 @@
+{
+    "recommendations": [
+        "shopify.ruby-lsp",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.vscode-json"
+    ]
+}

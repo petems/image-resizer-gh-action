@@ -14,7 +14,7 @@ echo "Width Limit: $1"
 echo "Height Limit: $2"
 echo "Given directory: $3"
 
-imagecount=$(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)' | wc -l)
+imagecount=$(find "$imagesdir" -name "*.jpg" -o -name "*.jpeg" -o -name "*.png" | wc -l | tr -d ' ')
 
 if [ -d "$imagesdir" ]; then
   true
@@ -30,7 +30,12 @@ if [ "$imagecount" -eq "0" ]; then
    exit 1;
 fi
 
-mapfile -t imagearray < <(find "$imagesdir" -regextype posix-extended -regex '.*\.(jpg|png|jpeg)')
+imagearray=()
+while IFS= read -r file; do
+  imagearray+=("$file")
+done < <(find "$imagesdir" -name "*.jpg" -o -name "*.jpeg" -o -name "*.png")
+
+
 
 roughOutput=""
 csvOutput="Image path, Old size, New size"
