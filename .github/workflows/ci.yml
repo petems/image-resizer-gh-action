@@ -107,7 +107,7 @@ jobs:
           target: test-images/
           dimensions: 50%
           widthLimit: 1024
-          HeightLimit: 768
+          heightLimit: 768
 
       - name: Verify results
         run: |

@@ -16,7 +16,7 @@ inputs:
   widthLimit:
     description: 'Width Limit'
     required: true
-  HeightLimit:
+  heightLimit:
     description: 'Height Limit'
     required: true
 outputs:
@@ -30,7 +30,7 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.widthLimit }}
-    - ${{ inputs.HeightLimit }}
+    - ${{ inputs.heightLimit }}
     - ${{ inputs.target }}
     - ${{ inputs.dimensions }}
     

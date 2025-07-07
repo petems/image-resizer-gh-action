@@ -84,12 +84,12 @@ describe 'GitHub Action Integration Tests' do
       expect(inputs).to have_key('target')
       expect(inputs).to have_key('dimensions')
       expect(inputs).to have_key('widthLimit')
-      expect(inputs).to have_key('HeightLimit')
+      expect(inputs).to have_key('heightLimit')
 
       expect(inputs['target']['required']).to be true
       expect(inputs['dimensions']['required']).to be true
       expect(inputs['widthLimit']['required']).to be true
-      expect(inputs['HeightLimit']['required']).to be true
+      expect(inputs['heightLimit']['required']).to be true
     end
 
     it 'has correct output definitions' do
