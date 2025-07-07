@@ -4,6 +4,11 @@ require 'json'
 require 'docker'
 
 describe 'GitHub Action Integration Tests' do
+  before(:all) do
+    # Build Docker image for all tests
+    @docker_image = Docker::Image.build_from_dir('.', 't' => 'test-image-resizer')
+  end
+
   def imagemagick_command
     @imagemagick_command ||= if system('which magick > /dev/null 2>&1')
                                'magick'
@@ -12,6 +17,54 @@ describe 'GitHub Action Integration Tests' do
                              else
                                raise 'Neither magick nor convert command is available. Please install ImageMagick.'
                              end
+  end
+
+  shared_examples 'successful container execution' do
+    it 'runs successfully' do
+      expect(container_result[:exit_code]).to eq(0)
+    end
+
+    it 'has no ImageMagick decode delegate errors' do
+      no_decode_delegate = container_result[:output].lines.find { |line| line.include?('no decode delegate for this image format') }
+      expect(no_decode_delegate).to be_nil
+    end
+
+    it 'produces expected output' do
+      expected_outputs.each do |expected|
+        expect(container_result[:output]).to include(expected)
+      end
+    end
+  end
+
+  shared_context 'docker container execution' do
+    let(:container_result) do
+      container = Docker::Container.create(
+        'Image' => 'test-image-resizer',
+        'Cmd' => cmd_args,
+        'HostConfig' => {
+          'Binds' => [volume_bind]
+        }
+      )
+      
+      container.start
+      exit_code = container.wait['StatusCode']
+      output = container.logs(stdout: true, stderr: true)
+      
+      # Clean up container
+      container.remove
+      
+      { exit_code: exit_code, output: output }
+    end
+  end
+
+  after(:all) do
+    # Clean up Docker images created during tests
+    begin
+      image = Docker::Image.get('test-image-resizer')
+      image.remove(force: true) if image
+    rescue Docker::Error::NotFoundError
+      # Image doesn't exist, nothing to clean up
+    end
   end
   describe 'action.yml validation' do
     before(:all) do
@@ -52,6 +105,9 @@ describe 'GitHub Action Integration Tests' do
   end
 
   describe 'Docker integration' do
+    let(:temp_dir) { Dir.mktmpdir }
+    let(:test_images_dir) { File.join(temp_dir, 'test-images') }
+
     before(:all) do
       @temp_dir = Dir.mktmpdir
       @test_images_dir = File.join(@temp_dir, 'test-images')
@@ -68,66 +124,58 @@ describe 'GitHub Action Integration Tests' do
     end
 
     it 'builds Docker image successfully' do
-      image = Docker::Image.build_from_dir('.', { 't' => 'test-image-resizer' })
-      expect(image).not_to be_nil
-      expect(image.id).not_to be_empty
+      expect(@docker_image).not_to be_nil
+      expect(@docker_image.id).not_to be_empty
     end
 
-    it 'runs Docker container with correct parameters' do
-      container = Docker::Container.create(
-        'Image' => 'test-image-resizer',
-        'Cmd' => ['1000', '700', '/workspace/images/', '75%'],
-        'HostConfig' => {
-          'Binds' => ["#{@test_images_dir}:/workspace/images"]
-        }
-      )
-      
-      container.start
-      exit_status = container.wait['StatusCode']
-      output = container.logs(stdout: true, stderr: true)
-      container.remove
-      
-      expect(exit_status).to eq(0)
-      expect(output).to include('Width Limit: 1000')
-      expect(output).to include('Height Limit: 700')
+    describe 'container execution with parameters' do
+      include_context 'docker container execution'
+
+      let(:cmd_args) { ['1000', '700', '/workspace/images/', '75%'] }
+      let(:volume_bind) { "#{@test_images_dir}:/workspace/images" }
+      let(:expected_outputs) { ['Width Limit: 1000', 'Height Limit: 700'] }
+
+      include_examples 'successful container execution'
     end
 
-    it 'processes images correctly in Docker' do
-      # Copy test images to temporary directory
-      temp_test_dir = Dir.mktmpdir
-      `cp -r #{@test_images_dir}/* #{temp_test_dir}/`
-
-      container = Docker::Container.create(
-        'Image' => 'test-image-resizer',
-        'Cmd' => ['1000', '700', '/workspace/images/', '75%'],
-        'HostConfig' => {
-          'Binds' => ["#{temp_test_dir}:/workspace/images"]
-        }
-      )
+    describe 'image processing' do
+      let(:temp_test_dir) { Dir.mktmpdir }
       
-      container.start
-      exit_status = container.wait['StatusCode']
-      container.remove
+      before do
+        `cp -r #{@test_images_dir}/* #{temp_test_dir}/`
+      end
       
-      expect(exit_status).to eq(0)
+      after do
+        FileUtils.remove_entry(temp_test_dir)
+      end
 
-      # Check that large image was resized
-      large_width = `identify -format "%w" #{temp_test_dir}/large.jpg`.strip.to_i
-      large_height = `identify -format "%h" #{temp_test_dir}/large.jpg`.strip.to_i
-      expect(large_width).to be <= 1000
-      expect(large_height).to be <= 700
+      include_context 'docker container execution'
 
-      # Check that small image was not resized
-      small_width = `identify -format "%w" #{temp_test_dir}/small.jpg`.strip.to_i
-      small_height = `identify -format "%h" #{temp_test_dir}/small.jpg`.strip.to_i
-      expect(small_width).to eq(500)
-      expect(small_height).to eq(400)
+      let(:cmd_args) { ['1000', '700', '/workspace/images/', '75%'] }
+      let(:volume_bind) { "#{temp_test_dir}:/workspace/images" }
 
-      FileUtils.remove_entry(temp_test_dir)
+      it 'processes images correctly in Docker' do
+        expect(container_result[:exit_code]).to eq(0)
+
+        # Check that large image was resized
+        large_width = `identify -format "%w" #{temp_test_dir}/large.jpg`.strip.to_i
+        large_height = `identify -format "%h" #{temp_test_dir}/large.jpg`.strip.to_i
+        expect(large_width).to be <= 1000
+        expect(large_height).to be <= 700
+
+        # Check that small image was not resized
+        small_width = `identify -format "%w" #{temp_test_dir}/small.jpg`.strip.to_i
+        small_height = `identify -format "%h" #{temp_test_dir}/small.jpg`.strip.to_i
+        expect(small_width).to eq(500)
+        expect(small_height).to eq(400)
+      end
     end
   end
 
   describe 'GitHub Actions environment simulation' do
+    let(:temp_dir) { Dir.mktmpdir }
+    let(:test_images_dir) { File.join(temp_dir, 'images') }
+
     before do
       @temp_dir = Dir.mktmpdir
       @test_images_dir = File.join(@temp_dir, 'images')
@@ -142,71 +190,196 @@ describe 'GitHub Action Integration Tests' do
       FileUtils.remove_entry(@temp_dir)
     end
 
-    it 'produces GitHub Actions compatible output' do
-      result = `bash entrypoint.sh 1024 768 #{@test_images_dir}/ 80% 2>&1`
-      expect($?.exitstatus).to eq(0)
+    describe 'GitHub Actions output format' do
+      include_context 'docker container execution'
 
-      # Check for GitHub Actions output format
-      expect(result).to match(/::set-output name=images_changed::/)
-      expect(result).to match(/::set-output name=csv_images_changed::/)
+      let(:cmd_args) { ['1024', '768', '/workspace/images/', '80%'] }
+      let(:volume_bind) { "#{@test_images_dir}:/workspace/images" }
+      let(:expected_outputs) { [/::set-output name=images_changed::/, /::set-output name=csv_images_changed::/] }
+
+      it 'produces GitHub Actions compatible output' do
+        expect(container_result[:exit_code]).to eq(0)
+        expected_outputs.each do |pattern|
+          expect(container_result[:output]).to match(pattern)
+        end
+      end
     end
 
-    it 'handles CSV output with proper escaping' do
-      result = `bash entrypoint.sh 1024 768 #{@test_images_dir}/ 80% 2>&1`
-      expect($?.exitstatus).to eq(0)
+    describe 'CSV output handling' do
+      include_context 'docker container execution'
 
-      # Extract CSV output
-      csv_line = result.lines.find { |line| line.include?('::set-output name=csv_images_changed::') }
-      expect(csv_line).not_to be_nil
-      expect(csv_line).to include('%0A') # Newline encoding
+      let(:cmd_args) { ['1024', '768', '/workspace/images/', '80%'] }
+      let(:volume_bind) { "#{@test_images_dir}:/workspace/images" }
+
+      it 'handles CSV output with proper escaping' do
+        expect(container_result[:exit_code]).to eq(0)
+        # Extract CSV output
+        csv_line = container_result[:output].lines.find { |line| line.include?('::set-output name=csv_images_changed::') }
+        expect(csv_line).not_to be_nil
+        expect(csv_line).to include('%0A') # Newline encoding
+      end
     end
 
-    it 'handles no changes scenario' do
-      # Create only small images
-      `#{imagemagick_command} -size 500x400 xc:green #{@test_images_dir}/small1.jpg`
-      `#{imagemagick_command} -size 600x500 xc:yellow #{@test_images_dir}/small2.jpg`
+    describe 'no changes scenario' do
+      before do
+        # Create only small images
+        `#{imagemagick_command} -size 500x400 xc:green #{@test_images_dir}/small1.jpg`
+        `#{imagemagick_command} -size 600x500 xc:yellow #{@test_images_dir}/small2.jpg`
+      end
 
-      result = `bash entrypoint.sh 2000 1000 #{@test_images_dir}/ 80% 2>&1`
-      expect($?.exitstatus).to eq(0)
-      expect(result).to include('No Images Changed')
+      include_context 'docker container execution'
+
+      let(:cmd_args) { ['2000', '1000', '/workspace/images/', '80%'] }
+      let(:volume_bind) { "#{@test_images_dir}:/workspace/images" }
+      let(:expected_outputs) { ['No Images Changed'] }
+
+      include_examples 'successful container execution'
     end
   end
 
   describe 'action performance and reliability' do
-    it 'handles large number of images' do
-      temp_dir = Dir.mktmpdir
-      test_images_dir = File.join(temp_dir, 'bulk-test')
-      Dir.mkdir(test_images_dir)
-
-      # Create 10 test images
-      10.times do |i|
-        `#{imagemagick_command} -size 1200x800 xc:red #{test_images_dir}/test#{i}.jpg`
+    describe 'large number of images' do
+      let(:temp_dir) { Dir.mktmpdir }
+      let(:test_images_dir) { File.join(temp_dir, 'bulk-test') }
+      
+      before do
+        Dir.mkdir(test_images_dir)
+        # Create 10 test images
+        10.times do |i|
+          `#{imagemagick_command} -size 1200x800 xc:red #{test_images_dir}/test#{i}.jpg`
+        end
       end
 
-      start_time = Time.now
-      result = `bash entrypoint.sh 1000 700 #{test_images_dir}/ 75% 2>&1`
-      end_time = Time.now
+      after do
+        FileUtils.remove_entry(temp_dir)
+      end
 
-      expect($?.exitstatus).to eq(0)
-      expect(end_time - start_time).to be < 30 # Should complete within 30 seconds
-      expect(result).to include('Image count in directory: 10')
+      include_context 'docker container execution'
 
+      let(:cmd_args) { ['1000', '700', '/workspace/images/', '75%'] }
+      let(:volume_bind) { "#{test_images_dir}:/workspace/images" }
+      let(:expected_outputs) { ['Image count in directory: 10'] }
+
+      it 'handles large number of images' do
+        start_time = Time.now
+        result = container_result
+        end_time = Time.now
+
+        expect(result[:exit_code]).to eq(0)
+        expect(end_time - start_time).to be < 30 # Should complete within 30 seconds
+        expect(result[:output]).to include('Image count in directory: 10')
+      end
+    end
+
+    describe 'different image formats' do
+      let(:temp_dir) { Dir.mktmpdir }
+      let(:test_images_dir) { File.join(temp_dir, 'format-test') }
+      
+      before do
+        Dir.mkdir(test_images_dir)
+        # Create images with different formats
+        `#{imagemagick_command} -size 1200x800 xc:red #{test_images_dir}/test.jpg`
+        `#{imagemagick_command} -size 1200x800 xc:blue #{test_images_dir}/test.jpeg`
+        `#{imagemagick_command} -size 1200x800 xc:green #{test_images_dir}/test.png`
+      end
+
+      after do
+        FileUtils.remove_entry(temp_dir)
+      end
+
+      include_context 'docker container execution'
+
+      let(:cmd_args) { ['1000', '700', '/workspace/images/', '75%'] }
+      let(:volume_bind) { "#{test_images_dir}:/workspace/images" }
+      let(:expected_outputs) { ['Image count in directory: 3'] }
+
+      include_examples 'successful container execution'
+    end
+  end
+
+  describe 'real image acceptance test' do
+    let(:temp_dir) { Dir.mktmpdir }
+    let(:test_images_dir) { File.join(temp_dir, 'real-image-test') }
+    let(:real_image_path) { File.join(File.dirname(__FILE__), 'introRealAnalysisImg.jpg') }
+    
+    before do
+      Dir.mkdir(test_images_dir)
+      expect(File.exist?(real_image_path)).to be true
+      `cp #{real_image_path} #{test_images_dir}/`
+    end
+
+    after do
       FileUtils.remove_entry(temp_dir)
     end
 
-    it 'handles different image formats correctly' do
+    include_context 'docker container execution'
+
+    let(:cmd_args) { ['700', '900', '/workspace/images/', '80%'] }
+    let(:volume_bind) { "#{test_images_dir}:/workspace/images" }
+
+    it 'processes introRealAnalysisImg.jpg without error' do
+      # Get original dimensions
+      original_width = `identify -format "%w" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      original_height = `identify -format "%h" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+
+      # Run the resizer with limits that will trigger resizing and 80% scaling
+      expect(container_result[:exit_code]).to eq(0)
+
+      # Verify the image still exists and is valid
+      expect(File.exist?("#{test_images_dir}/introRealAnalysisImg.jpg")).to be true
+      
+      # Check that image was resized (80% of original dimensions)
+      new_width = `identify -format "%w" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      new_height = `identify -format "%h" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      
+      # Verify dimensions are valid and the image was actually resized
+      expect(new_width).to be > 0
+      expect(new_height).to be > 0
+      expect(new_width).to be < original_width
+      expect(new_height).to be < original_height
+      
+      # Verify the scaling is approximately 80% (allowing for rounding)
+      expect(new_width).to be_within(5).of(original_width * 0.8)
+      expect(new_height).to be_within(5).of(original_height * 0.8)
+    end
+  end
+
+  describe 'real image acceptance test' do
+    it 'processes introRealAnalysisImg.jpg without error' do
       temp_dir = Dir.mktmpdir
-      test_images_dir = File.join(temp_dir, 'format-test')
+      test_images_dir = File.join(temp_dir, 'real-image-test')
       Dir.mkdir(test_images_dir)
 
-      # Create images with different formats
-      `#{imagemagick_command} -size 1200x800 xc:red #{test_images_dir}/test.jpg`
-      `#{imagemagick_command} -size 1200x800 xc:blue #{test_images_dir}/test.jpeg`
-      `#{imagemagick_command} -size 1200x800 xc:green #{test_images_dir}/test.png`
+      # Copy the real test image
+      real_image_path = File.join(File.dirname(__FILE__), 'introRealAnalysisImg.jpg')
+      expect(File.exist?(real_image_path)).to be true
+      
+      `cp #{real_image_path} #{test_images_dir}/`
 
-      result = `bash entrypoint.sh 1000 700 #{test_images_dir}/ 75% 2>&1`
+      # Get original dimensions
+      original_width = `identify -format "%w" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      original_height = `identify -format "%h" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+
+      # Run the resizer with limits that will trigger resizing and 80% scaling
+      result = `bash entrypoint.sh 700 900 #{test_images_dir}/ 80% 2>&1`
       expect($?.exitstatus).to eq(0)
-      expect(result).to include('Image count in directory: 3')
+
+      # Verify the image still exists and is valid
+      expect(File.exist?("#{test_images_dir}/introRealAnalysisImg.jpg")).to be true
+      
+      # Check that image was resized (80% of original dimensions)
+      new_width = `identify -format "%w" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      new_height = `identify -format "%h" #{test_images_dir}/introRealAnalysisImg.jpg`.strip.to_i
+      
+      # Verify dimensions are valid and the image was actually resized
+      expect(new_width).to be > 0
+      expect(new_height).to be > 0
+      expect(new_width).to be < original_width
+      expect(new_height).to be < original_height
+      
+      # Verify the scaling is approximately 80% (allowing for rounding)
+      expect(new_width).to be_within(5).of(original_width * 0.8)
+      expect(new_height).to be_within(5).of(original_height * 0.8)
 
       FileUtils.remove_entry(temp_dir)
     end
