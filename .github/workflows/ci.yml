@@ -17,8 +17,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y shellcheck
-          pip install bashate
+          sudo apt-get install -y shellcheck python3-pip
+          pip3 install bashate
 
       - name: Run shellcheck
         run: shellcheck entrypoint.sh
@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby-version: ['3.3', '3.4']
+        ruby-version: ['3.2', '3.3']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,7 +58,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.2'
           bundler-cache: true
 
       - name: Install ImageMagick
@@ -77,7 +77,7 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.2'
           bundler-cache: true
 
       - name: Run Docker-based tests
@@ -107,7 +107,7 @@ jobs:
           target: test-images/
           dimensions: 50%
           widthLimit: 1024
-          HeightLimit: 768
+          heightLimit: 768
 
       - name: Verify results
         run: |

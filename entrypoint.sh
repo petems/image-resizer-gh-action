@@ -62,9 +62,9 @@ for f in "${imagearray[@]}"; do
 done
 
 if [ "$changedCount" -gt 0 ]; then
-  echo "::set-output name=images_changed::${roughOutput}"
+  echo "images_changed=${roughOutput}" >> "$GITHUB_OUTPUT"
 else
-  echo "::set-output name=images_changed::'No Images Changed'"
+  echo "images_changed='No Images Changed'" >> "$GITHUB_OUTPUT"
 fi
 
 # Workaround until https://github.community/t/set-output-truncates-multiline-strings/16852/7#M8539 is resolved
@@ -73,4 +73,4 @@ csvOutput="${csvOutput//'%'/'%25'}"
 csvOutput="${csvOutput//$'\n'/'%0A'}"
 csvOutput="${csvOutput//$'\r'/'%0D'}"
 
-echo "::set-output name=csv_images_changed::${csvOutput}"
+echo "csv_images_changed=${csvOutput}" >> "$GITHUB_OUTPUT"
