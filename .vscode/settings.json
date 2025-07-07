@@ -1,0 +1,41 @@
+{
+  "rubyLsp.rubyVersionManager": {
+    "identifier": "rbenv"
+  },
+  "rubyLsp.enabledFeatures": {
+    "codeActions": true,
+    "diagnostics": true,
+    "documentHighlights": true,
+    "documentLink": true,
+    "documentSymbols": true,
+    "foldingRanges": true,
+    "formatting": true,
+    "hover": true,
+    "inlayHint": true,
+    "onTypeFormatting": true,
+    "selectionRanges": true,
+    "semanticHighlighting": true,
+    "completion": true,
+    "codeLens": true,
+    "definition": true,
+    "workspaceSymbol": true,
+    "signatureHelp": true,
+    "typeHierarchy": true
+  },
+  "rubyLsp.featuresConfiguration": {
+    "inlayHint": {
+      "enableAll": true
+    }
+  },
+  "rubyLsp.formatter": "rubocop",
+  "rubyLsp.bundleGemfile": ".ruby-lsp/Gemfile",
+  "editor.formatOnSave": true,
+  "editor.rulers": [120],
+  "files.associations": {
+    "*.rb": "ruby",
+    "Gemfile": "ruby",
+    "Rakefile": "ruby",
+    "*.gemspec": "ruby",
+    ".pryrc": "ruby"
+  }
+} 

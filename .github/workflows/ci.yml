@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+          pip install bashate
+
+      - name: Run shellcheck
+        run: shellcheck entrypoint.sh
+
+      - name: Run bashate
+        run: bashate -i E003,E006 entrypoint.sh
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ruby-version: ['3.3', '3.4']
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Run unit tests
+        run: bundle exec rspec spec/unit/ --format documentation
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Run integration tests
+        run: bundle exec rspec spec/integration/ --format documentation
+
+  docker-tests:
+    name: Docker Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      - name: Run Docker-based tests
+        run: bundle exec rspec spec/entrypoint/ --format documentation
+
+  acceptance-tests:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ImageMagick
+        run: sudo apt-get update && sudo apt-get install -y imagemagick
+
+      - name: Create test images
+        run: |
+          mkdir -p test-images
+          # Create a test image over the limit
+          convert -size 1200x800 xc:red test-images/large-image.jpg
+          # Create a test image under the limit
+          convert -size 500x400 xc:blue test-images/small-image.jpg
+
+      - name: Test the action
+        uses: ./
+        with:
+          target: test-images/
+          dimensions: 50%
+          widthLimit: 1024
+          HeightLimit: 768
+
+      - name: Verify results
+        run: |
+          # Check that large image was resized
+          width=$(identify -format "%w" test-images/large-image.jpg)
+          height=$(identify -format "%h" test-images/large-image.jpg)
+          if [ "$width" -gt 1024 ] || [ "$height" -gt 768 ]; then
+            echo "Large image was not resized properly"
+            exit 1
+          fi
+          echo "Large image resized successfully: ${width}x${height}"
+          
+          # Check that small image was not resized
+          width=$(identify -format "%w" test-images/small-image.jpg)
+          height=$(identify -format "%h" test-images/small-image.jpg)
+          if [ "$width" -ne 500 ] || [ "$height" -ne 400 ]; then
+            echo "Small image was unexpectedly resized"
+            exit 1
+          fi
+          echo "Small image left unchanged: ${width}x${height}"
