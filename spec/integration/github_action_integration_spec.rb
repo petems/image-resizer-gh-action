@@ -1,6 +1,7 @@
 require 'spec_helper'
 require 'yaml'
 require 'json'
+require 'docker'
 
 describe 'GitHub Action Integration Tests' do
   def imagemagick_command
@@ -67,16 +68,28 @@ describe 'GitHub Action Integration Tests' do
     end
 
     it 'builds Docker image successfully' do
-      result = `docker build -t test-image-resizer . 2>&1`
-      expect($?.exitstatus).to eq(0)
-      expect(result).to match(/exporting to image|Successfully built/)
+      image = Docker::Image.build_from_dir('.', { 't' => 'test-image-resizer' })
+      expect(image).not_to be_nil
+      expect(image.id).not_to be_empty
     end
 
     it 'runs Docker container with correct parameters' do
-      result = `docker run --rm -v #{@test_images_dir}:/workspace/images test-image-resizer 1000 700 /workspace/images/ 75% 2>&1`
-      expect($?.exitstatus).to eq(0)
-      expect(result).to include('Width Limit: 1000')
-      expect(result).to include('Height Limit: 700')
+      container = Docker::Container.create(
+        'Image' => 'test-image-resizer',
+        'Cmd' => ['1000', '700', '/workspace/images/', '75%'],
+        'HostConfig' => {
+          'Binds' => ["#{@test_images_dir}:/workspace/images"]
+        }
+      )
+      
+      container.start
+      exit_status = container.wait['StatusCode']
+      output = container.logs(stdout: true, stderr: true)
+      container.remove
+      
+      expect(exit_status).to eq(0)
+      expect(output).to include('Width Limit: 1000')
+      expect(output).to include('Height Limit: 700')
     end
 
     it 'processes images correctly in Docker' do
@@ -84,8 +97,19 @@ describe 'GitHub Action Integration Tests' do
       temp_test_dir = Dir.mktmpdir
       `cp -r #{@test_images_dir}/* #{temp_test_dir}/`
 
-      result = `docker run --rm -v #{temp_test_dir}:/workspace/images test-image-resizer 1000 700 /workspace/images/ 75% 2>&1`
-      expect($?.exitstatus).to eq(0)
+      container = Docker::Container.create(
+        'Image' => 'test-image-resizer',
+        'Cmd' => ['1000', '700', '/workspace/images/', '75%'],
+        'HostConfig' => {
+          'Binds' => ["#{temp_test_dir}:/workspace/images"]
+        }
+      )
+      
+      container.start
+      exit_status = container.wait['StatusCode']
+      container.remove
+      
+      expect(exit_status).to eq(0)
 
       # Check that large image was resized
       large_width = `identify -format "%w" #{temp_test_dir}/large.jpg`.strip.to_i
